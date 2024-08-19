@@ -69,11 +69,17 @@ export default {
 
         if (response.ok) {
           const result = await response.json();
+
+          //concatenação do nome do usuario
+          let fullName = result.user.firstName + " " + result.user.lastName;
+
           localStorage.setItem('authToken', result.access_token);
+          localStorage.setItem('userEmail', result.user.email);
+          localStorage.setItem('userName', fullName);
+          localStorage.setItem('userId', result.user.id);
           this.$router.push({ name: 'homeDashboard' });
         } else {
           const error = await response.json();
-          // Remove prefixo "Erro: " da mensagem de erro
           const errorMessage = error.message.startsWith('Erro: ') 
             ? error.message.replace('Erro: ', '') 
             : error.message;
@@ -95,7 +101,6 @@ export default {
   }
 };
 </script>
-
   
 <style>
   /* Mantive o estilo inalterado */
