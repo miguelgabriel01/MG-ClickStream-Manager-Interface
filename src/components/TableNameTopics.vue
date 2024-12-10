@@ -15,9 +15,10 @@
           <tbody>
             <tr v-for="(topic) in topics" :key="topic._id">
               <td>{{ topic.topicName }}</td>
-              <td style="border: 1px solid red;">
+              <td style="display:flex;align-items: center;justify-content: center;align-content: center;margin-top: 2px;" id="td">
                 <!-- Botões de ação para cada tópico -->
                 <button class="btnOptions" style="background:#82D6A8" @click="downloadData(topic._id, topic.topicName)">Baixar Dados</button>
+                <button class="btnOptions" style="background:#70BCBC" @click="analyzeTopic(topic._id)">Analisar</button>
                 <button class="btnOptions" style="background:#D984A3" @click="deleteTopic(topic._id)">Deletar</button>
               </td>
             </tr>
@@ -52,7 +53,7 @@ export default {
       }
 
       try {
-        const response = await fetch(`http://localhost:3333/users/listTopics`, {
+        const response = await fetch(`http://localhost:3000/users/listTopics`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -77,7 +78,7 @@ export default {
       const token = localStorage.getItem('authToken');
 
       try {
-        const response = await fetch(`http://localhost:3333/users/listTopics/${topicId}`, {
+        const response = await fetch(`http://localhost:3000/users/listTopics/${topicId}`, {
           method: 'GET',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -87,6 +88,7 @@ export default {
 
         if (response.ok) {
           const data = await response.json();
+          console.log(data);
           this.generateCSV(data, topicName); // Chama a função para gerar o CSV
         } else {
           console.error('Erro ao baixar dados do tópico:', response.statusText);
@@ -98,39 +100,64 @@ export default {
 
     // Função para gerar e baixar o CSV
     generateCSV(data, topicName) {
-      // Cabeçalho das colunas
       let csvContent = "Data,Hora,Caminho Percorrido\n";
 
-      // Iterar sobre os payloads e formatar os dados para o CSV
       data.payloads.forEach(row => {
         const data = row.data;
         const hora = row.hora;
         const caminhoPecorrido = Array.isArray(row.caminhoPecorrido) 
           ? row.caminhoPecorrido.join(" -> ") 
-          : "N/A"; // Usar "N/A" caso não seja um array válido
+          : "N/A";
 
-        // Adicionar a linha formatada ao CSV
         csvContent += `${data},${hora},"${caminhoPecorrido}"\n`;
       });
 
-      // Criar um Blob do conteúdo CSV
       const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
       const link = document.createElement("a");
       link.href = URL.createObjectURL(blob);
-      link.download = `${topicName}.csv`; // Nome do arquivo CSV baseado no nome do tópico
+      link.download = `${topicName}.csv`;
       link.click();
     },
 
-    // Função para deletar um tópico (apenas um exemplo, você pode implementar o delete real)
+    // Função para analisar um tópico e salvar o último dado no localStorage
+    async analyzeTopic(topicId) {
+      const token = localStorage.getItem('authToken');
+
+      try {
+        const response = await fetch(`http://localhost:3000/users/listTopics/${topicId}`, {
+          method: 'GET',
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log('Dados para análise:', data);
+
+          // Remover o último dado salvo
+          localStorage.removeItem('lastAnalysisData');
+          
+          // Salvar o novo dado como o último dado analisado
+          localStorage.setItem('lastAnalysisData', JSON.stringify(data));
+          alert("Dados analisados e salvos no localStorage.");
+        } else {
+          console.error('Erro ao analisar dados do tópico:', response.statusText);
+        }
+      } catch (error) {
+        console.error('Erro ao buscar dados do tópico:', error);
+      }
+    },
+
     deleteTopic(topicId) {
       console.log(`Deletar tópico com ID: ${topicId}`);
-      // Aqui você pode implementar a lógica de deletar o tópico
     }
   },
   watch: {
     showTableModal(newVal) {
       if (newVal) {
-        this.fetchTopics(); // Busca os tópicos quando o modal for exibido
+        this.fetchTopics();
       }
     }
   }
@@ -184,7 +211,7 @@ export default {
     color: #FFFFFF;
     font-size: 14px;
     cursor: pointer;
-    margin: 0 5px;
+    margin: 5px 5px 17px 5px;
   }
 
 
